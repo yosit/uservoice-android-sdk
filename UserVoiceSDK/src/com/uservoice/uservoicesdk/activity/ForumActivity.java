@@ -34,7 +34,6 @@ import com.uservoice.uservoicesdk.ui.PaginationScrollListener;
 import com.uservoice.uservoicesdk.ui.SearchAdapter;
 import com.uservoice.uservoicesdk.ui.SearchExpandListener;
 import com.uservoice.uservoicesdk.ui.SearchQueryListener;
-import com.uservoice.uservoicesdk.ui.Utils;
 
 public class ForumActivity extends BaseListActivity implements SearchActivity {
 
@@ -49,7 +48,14 @@ public class ForumActivity extends BaseListActivity implements SearchActivity {
         suggestions = new ArrayList<Suggestion>();
 
         getListView().setDivider(null);
-        setListAdapter(new PaginatedAdapter<Suggestion>(this, R.layout.suggestion_item, suggestions) {
+        setListAdapter(new PaginatedAdapter<Suggestion>(this, R.layout.uv_suggestion_item, suggestions) {
+            boolean initializing = true;
+
+            @Override
+            public void loadMore() {
+                initializing = false;
+                super.loadMore();
+            }
 
             @Override
             public int getViewTypeCount() {
@@ -63,7 +69,7 @@ public class ForumActivity extends BaseListActivity implements SearchActivity {
 
             @Override
             public int getCount() {
-                return super.getCount() + 2;
+                return super.getCount() + 2 + (initializing ? 1 : 0);
             }
 
             @Override
@@ -72,6 +78,8 @@ public class ForumActivity extends BaseListActivity implements SearchActivity {
                     return 2;
                 if (position == 1)
                     return 3;
+                if (position == 2 && initializing)
+                    return LOADING;
                 return super.getItemViewType(position - 2);
             }
 
@@ -87,14 +95,14 @@ public class ForumActivity extends BaseListActivity implements SearchActivity {
                     View view = convertView;
                     if (view == null) {
                         if (type == 2) {
-                            view = getLayoutInflater().inflate(R.layout.text_item, null);
-                            TextView text = (TextView) view.findViewById(R.id.text);
+                            view = getLayoutInflater().inflate(R.layout.uv_text_item, null);
+                            TextView text = (TextView) view.findViewById(R.id.uv_text);
                             text.setText(R.string.uv_post_an_idea);
-                            view.findViewById(R.id.divider).setVisibility(View.GONE);
-                            view.findViewById(R.id.text2).setVisibility(View.GONE);
+                            view.findViewById(R.id.uv_divider).setVisibility(View.GONE);
+                            view.findViewById(R.id.uv_text2).setVisibility(View.GONE);
                         } else if (type == 3) {
-                            view = getLayoutInflater().inflate(R.layout.header_item_light, null);
-                            TextView text = (TextView) view.findViewById(R.id.header_text);
+                            view = getLayoutInflater().inflate(R.layout.uv_header_item_light, null);
+                            TextView text = (TextView) view.findViewById(R.id.uv_header_text);
                             text.setText(R.string.uv_idea_text_heading);
                         }
                     }
@@ -106,14 +114,14 @@ public class ForumActivity extends BaseListActivity implements SearchActivity {
 
             @Override
             protected void customizeLayout(View view, Suggestion model) {
-                TextView textView = (TextView) view.findViewById(R.id.suggestion_title);
+                TextView textView = (TextView) view.findViewById(R.id.uv_suggestion_title);
                 textView.setText(model.getTitle());
 
-                textView = (TextView) view.findViewById(R.id.subscriber_count);
+                textView = (TextView) view.findViewById(R.id.uv_subscriber_count);
                 textView.setText(String.valueOf(model.getNumberOfSubscribers()));
 
-                textView = (TextView) view.findViewById(R.id.suggestion_status);
-                View colorView = view.findViewById(R.id.suggestion_status_color);
+                textView = (TextView) view.findViewById(R.id.uv_suggestion_status);
+                View colorView = view.findViewById(R.id.uv_suggestion_status_color);
                 if (model.getStatus() == null) {
                     textView.setVisibility(View.GONE);
                     colorView.setVisibility(View.GONE);
@@ -196,21 +204,21 @@ public class ForumActivity extends BaseListActivity implements SearchActivity {
     @SuppressLint("NewApi")
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.forum, menu);
-        if (Utils.hasActionBar()) {
-            menu.findItem(R.id.menu_search).setOnActionExpandListener(new SearchExpandListener(this));
-            SearchView search = (SearchView) menu.findItem(R.id.menu_search).getActionView();
+        getMenuInflater().inflate(R.menu.uv_forum, menu);
+        if (getActionBar() != null) {
+            menu.findItem(R.id.uv_menu_search).setOnActionExpandListener(new SearchExpandListener(this));
+            SearchView search = (SearchView) menu.findItem(R.id.uv_menu_search).getActionView();
             search.setOnQueryTextListener(new SearchQueryListener(this));
         } else {
-            menu.findItem(R.id.menu_search).setVisible(false);
+            menu.findItem(R.id.uv_menu_search).setVisible(false);
         }
-        menu.findItem(R.id.new_idea).setVisible(Session.getInstance().getConfig().shouldShowPostIdea());
+        menu.findItem(R.id.uv_new_idea).setVisible(Session.getInstance().getConfig().shouldShowPostIdea());
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.new_idea) {
+        if (item.getItemId() == R.id.uv_new_idea) {
             startActivity(new Intent(this, PostIdeaActivity.class));
             return true;
         }
